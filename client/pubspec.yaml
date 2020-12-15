@@ -1,0 +1,74 @@
+name: client
+description: A new Flutter project.
+
+# The following line prevents the package from being accidentally published to
+# pub.dev using `pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.7.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^0.12.2
+  json_annotation: ^3.1.0
+  web_socket_channel: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^1.10.4
+  json_serializable: ^3.5.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - images/symbols/B1.png
+    - images/symbols/B2.png
+    - images/symbols/B3.png
+    - images/symbols/B4.png
+    - images/symbols/B5.png
+    - images/symbols/B6.png
+    - images/symbols/G1.png
+    - images/symbols/G2.png
+    - images/symbols/G3.png
+    - images/symbols/G4.png
+    - images/symbols/G5.png
+    - images/symbols/G6.png
+    - images/symbols/L1.png
+    - images/symbols/L2.png
+    - images/symbols/L3.png
+    - images/symbols/L4.png
+    - images/symbols/L5.png
+    - images/symbols/L6.png
+    - images/symbols/O1.png
+    - images/symbols/O2.png
+    - images/symbols/O3.png
+    - images/symbols/O4.png
+    - images/symbols/O5.png
+    - images/symbols/O6.png
+    - images/symbols/R1.png
+    - images/symbols/R2.png
+    - images/symbols/R3.png
+    - images/symbols/R4.png
+    - images/symbols/R5.png
+    - images/symbols/R6.png
+    - images/symbols/W1.png
+    - images/symbols/W2.png
+    - images/symbols/W3.png
+    - images/symbols/W4.png
+    - images/symbols/W5.png
+    - images/symbols/W6.png
