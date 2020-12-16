@@ -3,6 +3,8 @@ package qwirkle
 type Player struct {
 	// Nickname of the player.
 	ID string `json:"id"`
+	// The current score of the player.
+	Score int `json:"score"`
 	// The current cubes this player has on his board.
 	Cubes []Cube `json:"cubes"`
 }

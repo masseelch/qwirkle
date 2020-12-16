@@ -15,9 +15,16 @@ class Pos {
 
   String toJson() => '$x|$y';
 
+  String toString() => 'Pos($x, $y)';
+
   factory Pos.fromJson(String json) {
     final t = json.split('|');
 
     return Pos(int.parse(t.first), int.parse(t.last));
   }
+
+  Pos copyWith({int x, int y}) => Pos(
+    x ?? this.x,
+    y ?? this.y,
+  );
 }

@@ -9,6 +9,7 @@ class Player {
   Player();
 
   String id;
+  int score;
   List<Cube> cubes;
 
   factory Player.fromJson(Map<String, dynamic> json) => _$PlayerFromJson(json);

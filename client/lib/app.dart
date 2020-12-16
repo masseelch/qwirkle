@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,11 @@ import 'package:web_socket_channel/html.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import 'models/cube.dart';
 import 'models/game.dart';
+import 'models/pos.dart';
+import 'widgets/field.dart';
+import 'widgets/opponents.dart';
 
 const _title = 'Qwirkle';
 
@@ -119,7 +124,21 @@ class _MyHomePageState extends State<MyHomePage> {
             );
           }
 
-          return Text(jsonEncode(_game.toJson()));
+          const _size = 6;
+
+          return Row(
+            children: [
+              Opponents(opponents: _game.players.values.toList()),
+              Field(
+                player: _game.players[_nickname],
+                placed: Map.fromIterables(
+                  List.generate(_size, (index) => Pos(index + 5, index - 10))
+                    ..addAll(List.generate(_size, (index) => Pos(index, 0))),
+                  List.generate(2 * _size, _randomCube),
+                ),
+              ),
+            ],
+          );
         },
       ),
     );
@@ -139,8 +158,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // The first event received after registering is the whole game.
     _broadcast.stream.first.then((event) {
-      print(event);
-
       setState(() {
         _game = Game.fromJson(jsonDecode(event)["game"]);
       });
@@ -157,3 +174,11 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 }
+
+// todo - remove debug
+var _rand = Random(DateTime.now().millisecondsSinceEpoch);
+
+Cube _randomCube([dynamic _]) => Cube(
+      color: CubeColor.values[_rand.nextInt(CubeColor.values.length)],
+      shape: Shape.values[_rand.nextInt(Shape.values.length - 1) + 1],
+    );

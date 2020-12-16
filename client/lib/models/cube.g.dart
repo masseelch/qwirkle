@@ -51,12 +51,12 @@ T _$enumDecodeNullable<T>(
 }
 
 const _$ColorEnumMap = {
-  Color.Blue: 0,
-  Color.Green: 1,
-  Color.Orange: 2,
-  Color.Purple: 3,
-  Color.Red: 4,
-  Color.Yellow: 5,
+  CubeColor.Blue: 0,
+  CubeColor.Green: 1,
+  CubeColor.Orange: 2,
+  CubeColor.Purple: 3,
+  CubeColor.Red: 4,
+  CubeColor.Yellow: 5,
 };
 
 const _$ShapeEnumMap = {

@@ -20,7 +20,7 @@ enum Shape {
   star,
 }
 
-enum Color {
+enum CubeColor {
   @JsonValue(0)
   Blue,
   @JsonValue(1)
@@ -39,8 +39,10 @@ enum Color {
 class Cube {
   Cube({@required this.color, @required this.shape}) : assert(color != null);
 
-  final Color color;
+  final CubeColor color;
   final Shape shape;
+
+  String toString() => 'Cube(color: $color, shape: $shape)';
 
   factory Cube.fromJson(Map<String, dynamic> json) => _$CubeFromJson(json);
 
