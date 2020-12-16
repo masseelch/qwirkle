@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'cube.dart';
 
 const _cubeSize = 48.0;
+const _cubeOpacity = 0.2;
 
 class Field extends StatefulWidget {
   Field({@required this.player, @required this.placed})
@@ -20,31 +21,19 @@ class Field extends StatefulWidget {
 
 class _FieldState extends State<Field> {
   _FieldDimensions _dimensions;
-  List<_Cell> _placed;
+  Map<Pos, Cube> _placedCubesMap;
+
+  List<_Cell> _cells;
+  List<Cube> _availableCubes;
 
   @override
   void initState() {
     super.initState();
 
-    _dimensions = _FieldDimensions.fromPlaced(widget.placed);
-    print(_dimensions);
+    _availableCubes = widget.player.cubes;
+    _placedCubesMap = widget.placed;
 
-    _placed = [];
-
-    for (int x = _dimensions.minX; x <= _dimensions.maxX; x++) {
-      for (int y = _dimensions.minY; y <= _dimensions.maxY; y++) {
-        final pos = Pos(x, y);
-
-        _placed.add(_Cell(
-          pos: _dimensions.zeroIndexedPos(pos),
-          cube: widget.placed[pos],
-          hasNeighbour: widget.placed[pos.copyWith(y: pos.y - 1)] != null ||
-              widget.placed[pos.copyWith(x: pos.x + 1)] != null ||
-              widget.placed[pos.copyWith(y: pos.y + 1)] != null ||
-              widget.placed[pos.copyWith(x: pos.x - 1)] != null,
-        ));
-      }
-    }
+    _computeCells();
   }
 
   @override
@@ -52,63 +41,155 @@ class _FieldState extends State<Field> {
     final theme = Theme.of(context);
 
     return Expanded(
-      child: Center(
-        child: Scrollbar(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Container(
-                margin: EdgeInsets.all(16),
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: theme.primaryColor),
-                ),
-                // Add the padding
-                width: _dimensions.sizeX * _cubeSize + 17 * 2,
-                height: _dimensions.sizeY * _cubeSize + 17 * 2,
-                child: Stack(
-                  children: _placed
-                      .map(
-                        (cell) => Positioned(
-                          left: cell.pos.x * _cubeSize,
-                          top: cell.pos.y * _cubeSize,
-                          child: Builder(
-                            builder: (context) {
-                              if (cell.cube != null) {
-                                return CubeWidget(
-                                  cube: cell.cube,
-                                  width: _cubeSize,
-                                );
-                              }
+      child: Column(
+        children: [
+          const SizedBox(height: 64),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: _availableCubes.map((c) {
+              Widget cube = CubeWidget(cube: c, width: _cubeSize);
 
-                              if (cell.hasNeighbour) {
-                                return Container(
-                                  width: _cubeSize * 0.8,
-                                  height: _cubeSize * 0.8,
-                                  margin: EdgeInsets.all(_cubeSize * 0.1),
-                                  color: Colors.grey[200],
-                                );
-                              }
+              Widget child = Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: cube,
+              );
 
-                              return const SizedBox(
-                                width: _cubeSize,
-                                height: _cubeSize,
-                              );
-                            },
-                          ),
-                        ),
-                      )
-                      .toList(),
+              if (!c.locked) {
+                child = Draggable<Cube>(
+                  child: child,
+                  childWhenDragging: child,
+                  feedback: cube,
+                  data: c,
+                );
+              } else {
+                child = Opacity(
+                  opacity: 0.2,
+                  child: child,
+                );
+              }
+
+              return child;
+            }).toList(),
+          ),
+          const SizedBox(height: 64),
+          Expanded(
+            child: Center(
+              child: Scrollbar(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: Container(
+                      margin: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: theme.primaryColor),
+                      ),
+                      // Add the padding
+                      width: _dimensions.sizeX * _cubeSize + 17 * 2,
+                      height: _dimensions.sizeY * _cubeSize + 17 * 2,
+                      child: Stack(
+                        children: _cells.map(_buildCell).toList(),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
+
+  Widget _buildCell(_Cell cell) {
+    Widget child;
+
+    if (cell.cube != null) {
+      child = CubeWidget(
+        cube: cell.cube,
+        width: _cubeSize,
+      );
+
+      if (!cell.cube.locked) {
+        child = Opacity(
+          opacity: _cubeOpacity,
+          child: child,
+        );
+      }
+    } else if (cell.hasNeighbour) {
+      child = DragTarget<Cube>(
+        onWillAccept: (_) => cell.cube == null,
+        onAccept: (cube) {
+          _placedCubesMap[_dimensions.denormalizePos(cell.pos)] =
+              cube.copyWith(locked: false);
+
+          setState(() {
+            _availableCubes.firstWhere((c) => c == cube).lock();
+            _computeCells();
+          });
+        },
+        builder: (context, candidates, _) {
+          if (candidates.length > 0) {
+            return Opacity(
+              opacity: _cubeOpacity,
+              child: CubeWidget(
+                cube: candidates.first,
+                width: _cubeSize,
+              ),
+            );
+          }
+
+          return Container(
+            width: _cubeSize * 0.8,
+            height: _cubeSize * 0.8,
+            margin: EdgeInsets.all(_cubeSize * 0.1),
+            color: Colors.grey[200],
+          );
+        },
+      );
+    } else {
+      child = SizedBox(
+        width: _cubeSize,
+        height: _cubeSize,
+      );
+    }
+
+    return Positioned(
+      left: cell.pos.x * _cubeSize,
+      top: cell.pos.y * _cubeSize,
+      child: child,
+    );
+  }
+
+  void _computeCells() {
+    _dimensions = _FieldDimensions.fromPlaced(_placedCubesMap);
+
+    _cells = [];
+    for (int x = _dimensions.minX; x <= _dimensions.maxX; x++) {
+      for (int y = _dimensions.minY; y <= _dimensions.maxY; y++) {
+        final pos = Pos(x, y);
+
+        _cells.add(_Cell(
+          pos: _dimensions.normalizePos(pos),
+          cube: _placedCubesMap[pos],
+          hasNeighbour: _placedCubesMap[pos.copyWith(y: pos.y - 1)] != null ||
+              _placedCubesMap[pos.copyWith(x: pos.x + 1)] != null ||
+              _placedCubesMap[pos.copyWith(y: pos.y + 1)] != null ||
+              _placedCubesMap[pos.copyWith(x: pos.x - 1)] != null,
+        ));
+      }
+    }
+  }
 }
+
+// class _Cube {
+//   _Cube({@required this.cube, @required this.locked})
+//       : assert(cube != null && locked != null);
+//
+//   final Cube cube;
+//   final bool locked;
+// }
 
 class _Cell {
   _Cell({
@@ -135,7 +216,7 @@ class _FieldDimensions {
   factory _FieldDimensions.fromPlaced(Map<Pos, Cube> placed) {
     int minX = 0, minY = 0, maxX = 0, maxY = 0;
 
-    placed.forEach((pos, cube) {
+    placed.forEach((pos, _) {
       if (pos.x < minX) minX = pos.x;
       if (pos.y < minY) minY = pos.y;
       if (pos.x > maxX) maxX = pos.x;
@@ -160,11 +241,9 @@ class _FieldDimensions {
   // We need the top-left edge to be Pos(0,0). Cubes cannot be placed on the
   // outer edges of the field. If dragged onto the outer edge an extra cell in
   // that direction gets added to the field dynamically.
-  int zeroIndexedX(int x) => x - minX;
+  Pos normalizePos(Pos p) => Pos(p.x - minX, p.y - minY);
 
-  int zeroIndexedY(int y) => y - minY;
-
-  Pos zeroIndexedPos(Pos p) => Pos(zeroIndexedX(p.x), zeroIndexedY(p.y));
+  Pos denormalizePos(Pos p) => Pos(p.x + minX, p.y + minY);
 
   // The difference between the lowest and highest x.
   //

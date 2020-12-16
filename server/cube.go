@@ -33,7 +33,8 @@ type (
 	Shape int
 	// A Cube has a color and a shape after being rolled.
 	Cube struct {
-		Color Color `json:"color"`
-		Shape Shape `json:"shape"`
+		Color  Color `json:"color"`
+		Shape  Shape `json:"shape"`
+		Locked bool  `json:"locked"`
 	}
 )

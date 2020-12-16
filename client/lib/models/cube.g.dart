@@ -8,14 +8,16 @@ part of 'cube.dart';
 
 Cube _$CubeFromJson(Map<String, dynamic> json) {
   return Cube(
-    color: _$enumDecodeNullable(_$ColorEnumMap, json['color']),
+    color: _$enumDecodeNullable(_$CubeColorEnumMap, json['color']),
     shape: _$enumDecodeNullable(_$ShapeEnumMap, json['shape']),
+    locked: json['locked'] as bool,
   );
 }
 
 Map<String, dynamic> _$CubeToJson(Cube instance) => <String, dynamic>{
-      'color': _$ColorEnumMap[instance.color],
+      'color': _$CubeColorEnumMap[instance.color],
       'shape': _$ShapeEnumMap[instance.shape],
+      'locked': instance.locked,
     };
 
 T _$enumDecode<T>(
@@ -50,7 +52,7 @@ T _$enumDecodeNullable<T>(
   return _$enumDecode<T>(enumValues, source, unknownValue: unknownValue);
 }
 
-const _$ColorEnumMap = {
+const _$CubeColorEnumMap = {
   CubeColor.Blue: 0,
   CubeColor.Green: 1,
   CubeColor.Orange: 2,

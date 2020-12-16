@@ -37,10 +37,34 @@ enum CubeColor {
 
 @JsonSerializable()
 class Cube {
-  Cube({@required this.color, @required this.shape}) : assert(color != null);
+  Cube({
+    @required this.color,
+    @required this.shape,
+    @required this.locked,
+  })  : assert(color != null),
+        assert(shape != null),
+        assert(locked != null);
 
-  final CubeColor color;
-  final Shape shape;
+  CubeColor color;
+  Shape shape;
+  bool locked;
+
+  void lock() => locked = true;
+
+  void unlock() => locked = false;
+
+  @override
+  int get hashCode => [color.hashCode, shape.hashCode].hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Cube && color == other.color && shape == other.shape;
+
+  Cube copyWith({bool locked}) => Cube(
+        color: color,
+        shape: shape,
+        locked: locked ?? this.locked,
+      );
 
   String toString() => 'Cube(color: $color, shape: $shape)';
 

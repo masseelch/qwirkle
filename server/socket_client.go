@@ -159,7 +159,6 @@ func (c *Client) readPump() {
 		case messagePlaceCubes:
 
 
-
 		default:
 			log.Println("Default case reached")
 		}

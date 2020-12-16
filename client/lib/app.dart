@@ -177,8 +177,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
 // todo - remove debug
 var _rand = Random(DateTime.now().millisecondsSinceEpoch);
-
+// todo - remove debug
 Cube _randomCube([dynamic _]) => Cube(
       color: CubeColor.values[_rand.nextInt(CubeColor.values.length)],
       shape: Shape.values[_rand.nextInt(Shape.values.length - 1) + 1],
+      locked: true,
     );
