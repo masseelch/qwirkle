@@ -15,11 +15,13 @@ type Game struct {
 	// The ID of the game.
 	ID token.Token `json:"id"`
 	// Registered players for this game.
-	Players map[string]*Player `json:"players"`
+	Players Players `json:"players"`
 	// The cube store to draw new cubes from.
 	Cubes []Cube `json:"-"`
 	// The cubes placed on the game-plan already.
 	Placed Placed ` json:"placed,omitempty"`
+	// Currently active player.
+	ActivePlayer *Player `json:"active_player"`
 }
 
 func NewGame() *Game {
@@ -29,10 +31,10 @@ func NewGame() *Game {
 	}
 
 	// 15 cubes per color.
-	cs := make([]Cube, cubesPerColorPerGame * len(Colors))
+	cs := make([]Cube, cubesPerColorPerGame*len(Colors))
 	for i, c := range Colors {
 		for j := 0; j < cubesPerColorPerGame; j++ {
-			cs[i * cubesPerColorPerGame + j] = Cube{Color: c}
+			cs[i*cubesPerColorPerGame+j] = Cube{Color: c}
 		}
 	}
 
@@ -40,7 +42,7 @@ func NewGame() *Game {
 		rand:    rand.New(rand.NewSource(time.Now().Unix())),
 		ID:      id,
 		Cubes:   cs,
-		Players: make(map[string]*Player),
+		Players: make(Players, 0),
 		Placed:  make(Placed),
 	}
 }
@@ -78,4 +80,12 @@ func (g *Game) AddCubes(cs []Cube) {
 
 func (g *Game) RollCube(c *Cube) {
 	c.Shape = Shape(g.rand.Intn(int(Star)) + 1)
+}
+
+func (g *Game) Start() {
+	g.ActivePlayer = g.Players[0]
+}
+
+func (g *Game) NextPlayer() {
+	g.ActivePlayer = g.Players.NextPlayer(g.ActivePlayer)
 }

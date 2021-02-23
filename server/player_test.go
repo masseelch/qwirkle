@@ -24,3 +24,20 @@ func TestPlayer_HasCube(t *testing.T) {
 	require.False(p.HasCube(Cube{Color: Orange}))
 	require.False(p.HasCube(Cube{Color: Orange, Shape: Diamond}))
 }
+
+func TestPlayers_NextPlayer(t *testing.T) {
+	require := testify.New(t)
+
+	ps := Players{&Player{ID: "one"}}
+	require.Equal("one", ps.NextPlayer(ps[0]).ID)
+
+	ps = Players{
+		&Player{ID: "one"},
+		&Player{ID: "two"},
+		&Player{ID: "three"},
+	}
+
+	require.Equal("two", ps.NextPlayer(ps[0]).ID)
+	require.Equal("three", ps.NextPlayer(ps[1]).ID)
+	require.Equal("one", ps.NextPlayer(ps[2]).ID)
+}

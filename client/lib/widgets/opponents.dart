@@ -4,9 +4,13 @@ import 'package:flutter/material.dart';
 import '../models/player.dart';
 
 class Opponents extends StatefulWidget {
-  Opponents({@required this.opponents}) : assert(opponents != null);
+  Opponents({
+    @required this.opponents,
+    this.active,
+  }) : assert(opponents != null);
 
   final List<Player> opponents;
+  final Player active;
 
   @override
   _OpponentsState createState() => _OpponentsState();
@@ -14,6 +18,7 @@ class Opponents extends StatefulWidget {
 
 class _OpponentsState extends State<Opponents> {
   List<Player> _opponents;
+  Player _active;
 
   @override
   void initState() {
@@ -28,10 +33,12 @@ class _OpponentsState extends State<Opponents> {
   }
 
   void _playersChanged() {
+    _active = widget.active;
     _opponents = widget.opponents;
     _opponents.sort((a, b) => a.score.compareTo(b.score));
     _opponents.forEach((player) {
-      player.cubes.sort((a, b) => a.color.toString().compareTo(b.color.toString()));
+      player.cubes
+          .sort((a, b) => a.color.toString().compareTo(b.color.toString()));
     });
   }
 
@@ -43,8 +50,11 @@ class _OpponentsState extends State<Opponents> {
         children: ListTile.divideTiles(
           color: Colors.black,
           tiles: _opponents.map((player) {
-            return Padding(
+            return Container(
               padding: EdgeInsets.all(24),
+              color: player.id == _active?.id
+                  ? Colors.tealAccent.withOpacity(0.4)
+                  : null,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -71,6 +81,8 @@ class _OpponentsState extends State<Opponents> {
                             ))
                         .toList(),
                   ),
+                  if (player.id == _active?.id)
+                    Text('active'),
                 ],
               ),
             );

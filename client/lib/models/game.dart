@@ -11,7 +11,8 @@ class Game {
   Game();
 
   String id;
-  Map<String, Player> players;
+  List<Player> players;
+  Player activePlayer;
   @PlacedConverter()
   Map<Pos, Cube> placed;
 
@@ -44,7 +45,7 @@ class PlacedConverter implements JsonConverter<Map<Pos, Cube>, Map<String, dynam
       return null;
     }
 
-    final r = {};
+    final r = <String, dynamic>{};
 
     object.forEach((key, value) {
       r[key.toJson()] = value.toJson();

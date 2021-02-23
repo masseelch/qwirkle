@@ -1,7 +1,6 @@
 package qwirkle
 
 import (
-	"fmt"
 	testify "github.com/stretchr/testify/require"
 	"testing"
 )
@@ -16,8 +15,6 @@ func TestNewGame(t *testing.T) {
 	require.NotNil(g.Players)
 	require.Len(g.Players, 0)
 	require.Len(g.Cubes, 90)
-
-	fmt.Printf("%v\n", g.Cubes)
 
 	for c := Blue; c <= Yellow; c++ {
 		require.Contains(g.Cubes, Cube{Color: c})

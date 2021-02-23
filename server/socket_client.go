@@ -2,6 +2,7 @@ package qwirkle
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"strconv"
@@ -130,7 +131,7 @@ func (c *Client) readPump() {
 			}
 
 			for i, cb := range toRoll {
-				if !c.hub.game.Players[c.nickname].HasCube(cb) {
+				if !c.hub.game.Players.GetByNickname(c.nickname).HasCube(cb) {
 					log.Printf("error: Player does not have cube %v", cb)
 					break
 				}
@@ -157,8 +158,11 @@ func (c *Client) readPump() {
 			c.hub.broadcast <- d
 
 		case messagePlaceCubes:
+			c.hub.game.NextPlayer()
 
+			c.hub.broadcast <- c.hub.gameData()
 
+			fmt.Println(m)
 		default:
 			log.Println("Default case reached")
 		}

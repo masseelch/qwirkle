@@ -9,11 +9,15 @@ const _cubeSize = 48.0;
 const _cubeOpacity = 0.2;
 
 class Field extends StatefulWidget {
-  Field({@required this.player, @required this.placed})
-      : assert(player != null);
+  Field({
+    @required this.player,
+    @required this.placed,
+    this.onPlacedLocked,
+  }) : assert(player != null);
 
   final Player player;
   final Map<Pos, Cube> placed;
+  final ValueSetter<Map<Pos, Cube>> onPlacedLocked;
 
   @override
   _FieldState createState() => _FieldState();
@@ -25,6 +29,8 @@ class _FieldState extends State<Field> {
 
   List<_Cell> _cells;
   List<Cube> _availableCubes;
+
+  List<_PlacedAvailableCube> _placedAvailableCubes = [];
 
   @override
   void initState() {
@@ -46,30 +52,65 @@ class _FieldState extends State<Field> {
           const SizedBox(height: 64),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: _availableCubes.map((c) {
-              Widget cube = CubeWidget(cube: c, width: _cubeSize);
+            children: [
+              IconButton(
+                icon: const Icon(Icons.undo),
+                onPressed: _placedAvailableCubes.isNotEmpty
+                    ? () {
+                        if (_placedAvailableCubes.isEmpty) {
+                          return;
+                        }
 
-              Widget child = Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: cube,
-              );
+                        setState(() {
+                          final pc = _placedAvailableCubes.removeLast();
+                          _availableCubes[pc.index].unlock();
+                          _placedCubesMap.remove(pc.pos);
+                          _computeCells();
+                        });
+                      }
+                    : null,
+              ),
+              const SizedBox(width: 24),
+            ]
+              ..addAll(_availableCubes.map((c) {
+                Widget cube = CubeWidget(cube: c, width: _cubeSize);
 
-              if (!c.locked) {
-                child = Draggable<Cube>(
-                  child: child,
-                  childWhenDragging: child,
-                  feedback: cube,
-                  data: c,
+                Widget child = Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: cube,
                 );
-              } else {
-                child = Opacity(
-                  opacity: 0.2,
-                  child: child,
-                );
-              }
 
-              return child;
-            }).toList(),
+                if (!c.locked) {
+                  child = Draggable<int>(
+                    child: child,
+                    childWhenDragging: child,
+                    feedback: cube,
+                    data: _availableCubes.indexOf(c),
+                  );
+                } else {
+                  child = Opacity(
+                    opacity: 0.2,
+                    child: child,
+                  );
+                }
+
+                return child;
+              }))
+              ..addAll(
+                [
+                  const SizedBox(width: 24),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: _placedAvailableCubes.isNotEmpty ? () {
+                      widget.onPlacedLocked?.call(_placedAvailableCubes.fold<Map<Pos, Cube>>({}, (cs, pac) {
+                        cs[pac.pos] = _availableCubes[pac.index];
+
+                        return cs;
+                      }));
+                    } : null,
+                  ),
+                ],
+              ),
           ),
           const SizedBox(height: 64),
           Expanded(
@@ -112,20 +153,25 @@ class _FieldState extends State<Field> {
       );
 
       if (!cell.cube.locked) {
-        child = Opacity(
-          opacity: _cubeOpacity,
+        child = Container(
+          color: Colors.tealAccent.withOpacity(_cubeOpacity * 2),
           child: child,
         );
       }
     } else if (cell.hasNeighbour) {
-      child = DragTarget<Cube>(
+      child = DragTarget<int>(
         onWillAccept: (_) => cell.cube == null,
-        onAccept: (cube) {
-          _placedCubesMap[_dimensions.denormalizePos(cell.pos)] =
-              cube.copyWith(locked: false);
-
+        onAccept: (index) {
           setState(() {
-            _availableCubes.firstWhere((c) => c == cube).lock();
+            final cube = _availableCubes[index];
+            final pos = _dimensions.denormalizePos(cell.pos);
+            cube.lock();
+
+            _placedCubesMap[pos] = cube.copyWith(locked: false);
+            _placedAvailableCubes.add(_PlacedAvailableCube(
+              index: index,
+              pos: pos,
+            ));
             _computeCells();
           });
         },
@@ -134,7 +180,7 @@ class _FieldState extends State<Field> {
             return Opacity(
               opacity: _cubeOpacity,
               child: CubeWidget(
-                cube: candidates.first,
+                cube: _availableCubes[candidates.first],
                 width: _cubeSize,
               ),
             );
@@ -183,14 +229,6 @@ class _FieldState extends State<Field> {
   }
 }
 
-// class _Cube {
-//   _Cube({@required this.cube, @required this.locked})
-//       : assert(cube != null && locked != null);
-//
-//   final Cube cube;
-//   final bool locked;
-// }
-
 class _Cell {
   _Cell({
     @required this.cube,
@@ -203,6 +241,13 @@ class _Cell {
   final bool hasNeighbour;
 
   String toString() => '_Cell(pos: $pos, cube: $cube)';
+}
+
+class _PlacedAvailableCube {
+  _PlacedAvailableCube({@required this.index, @required this.pos});
+
+  final int index;
+  final Pos pos;
 }
 
 class _FieldDimensions {

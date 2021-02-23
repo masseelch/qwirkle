@@ -23,6 +23,10 @@ func main() {
 		// hub.Clear()
 	})
 
+	r.Get("/start", func(w http.ResponseWriter, r *http.Request) {
+		hub.StartGame()
+	})
+
 	r.HandleFunc("/{nickname:.+}", func(w http.ResponseWriter, r *http.Request) {
 		qwirkle.ServeWs(hub, w, r)
 	})

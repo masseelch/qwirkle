@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:client/models/message.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -16,11 +17,13 @@ import 'widgets/field.dart';
 import 'widgets/opponents.dart';
 
 const _title = 'Qwirkle';
+const _admin = 'schlumpfmeister';
 
 class MyApp extends StatelessWidget {
-  MyApp({this.url});
+  MyApp({this.url, this.dev = false});
 
   final String url;
+  final bool dev;
 
   // This widget is the root of your application.
   @override
@@ -37,32 +40,43 @@ class MyApp extends StatelessWidget {
       ),
       home: MyHomePage(
         url: url,
+        dev: dev,
       ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.url}) : super(key: key);
+  MyHomePage({Key key, this.url, this.dev}) : super(key: key);
 
   final String url;
+  final bool dev;
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final _controller = TextEditingController();
   WebSocketChannel _channel;
   StreamController _broadcast;
 
-  String _nickname;
-
   Game _game;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.dev) {
+      _controller.text = _admin;
+      _connect();
+    }
+  }
 
   @override
   void dispose() {
     _broadcast?.close();
     _channel?.sink?.close();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -71,8 +85,16 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(_title),
-        actions: _nickname == 'schlumpfmeister'
+        actions: _controller.text == _admin
             ? [
+                if (_game != null && _game.activePlayer == null)
+                  IconButton(
+                    icon: const Icon(Icons.play_arrow, color: Colors.green),
+                    onPressed: () async {
+                      await http.get(
+                          'http://${widget.url.replaceAll("-ws", "")}/start');
+                    },
+                  ),
                 IconButton(
                   icon: const Icon(Icons.cached),
                   onPressed: () async {
@@ -93,11 +115,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 200),
                     child: TextField(
+                      controller: _controller,
                       decoration: const InputDecoration(labelText: 'Nickname'),
                       autofocus: true,
-                      onChanged: (v) => _nickname = v,
                       onSubmitted: (v) {
-                        if (_nickname.isNotEmpty) {
+                        if (_controller.text.isNotEmpty) {
                           _connect();
                         }
                       },
@@ -128,14 +150,22 @@ class _MyHomePageState extends State<MyHomePage> {
 
           return Row(
             children: [
-              Opponents(opponents: _game.players.values.toList()),
+              Opponents(opponents: _game.players, active: _game.activePlayer),
               Field(
-                player: _game.players[_nickname],
+                player:
+                    _game.players.firstWhere((p) => p.id == _controller.text),
                 placed: Map.fromIterables(
                   List.generate(_size, (index) => Pos(index + 5, index - 10))
                     ..addAll(List.generate(_size, (index) => Pos(index, 0))),
                   List.generate(2 * _size, _randomCube),
                 ),
+                onPlacedLocked: (placedCubes) {
+                  _channel.sink.add(jsonEncode(Message(
+                    type: MessageType.placeCubes,
+                    meta: {'for': _controller.text},
+                    data: placedCubes,
+                  ).toJson()));
+                },
               ),
             ],
           );
@@ -145,7 +175,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _connect() {
-    final url = 'ws://${widget.url}/$_nickname';
+    final url = 'ws://${widget.url}/${_controller.text}';
 
     setState(() {
       _channel = kIsWeb
@@ -163,14 +193,16 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     });
 
-    // All events except the first do only contain a player.
+    // Skip the first event since it is fired directly after registering a player.
     _broadcast.stream.skip(1).listen((event) {
-      print(event);
-      // final player = Player.fromJson(jsonDecode(event));
-      //
-      // setState(() {
-      //   _game.players[player.nickname] = player;
-      // });
+      final json = jsonDecode(event);
+
+      if (json['game'] != null) {
+        print(json['game']);
+        setState(() {
+          _game = Game.fromJson(json['game']);
+        });
+      }
     });
   }
 }

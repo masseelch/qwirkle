@@ -33,11 +33,11 @@ func (h *Hub) Run() {
 		select {
 		case c := <-h.register:
 			h.clients[c.nickname] = c
-			if _, ok := h.game.Players[c.nickname]; !ok {
-				h.game.Players[c.nickname] = &Player{
-					ID: c.nickname,
+			if p := h.game.Players.GetByNickname(c.nickname); p == nil {
+				h.game.Players.Add(&Player{
+					ID:    c.nickname,
 					Cubes: h.game.DrawCubes(6),
-				}
+				})
 			}
 
 			// Current Game Data
@@ -63,18 +63,22 @@ func (h *Hub) Run() {
 				close(client.send)
 			}
 
-		// case updatedClient := <-h.broadcast:
-			// d := h.playerData(updatedClient.nickname)
-			// for _, client := range h.clients {
-			// 	select {
-			// 	case client.send <- d:
-			// 	default:
-			// 		close(client.send)
-			// 		delete(h.clients, client.nickname)
-			// 	}
-			// }
+		case msg := <-h.broadcast:
+			for _, client := range h.clients {
+				select {
+				case client.send <- msg:
+				default:
+					close(client.send)
+					delete(h.clients, client.nickname)
+				}
+			}
 		}
 	}
+}
+
+func (h *Hub) StartGame() {
+	h.game.Start()
+	h.broadcast <- h.gameData()
 }
 
 func (h *Hub) gameData() []byte {
@@ -87,7 +91,7 @@ func (h *Hub) gameData() []byte {
 }
 
 func (h *Hub) playerData(nickname string) []byte {
-	j, err := json.Marshal(map[string]interface{}{"player": h.game.Players[nickname]})
+	j, err := json.Marshal(map[string]interface{}{"player": h.game.Players.GetByNickname(nickname)})
 	if err != nil {
 		panic(err)
 	}
